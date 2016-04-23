@@ -155,44 +155,45 @@ constructor: function(params) {
                 thisB.setHighlight( new Location( thisB.config.initialHighlight ) );
 
             thisB.initPlugins().then( function() {
-                thisB.loadNames();
-                thisB.loadUserCSS().then( function() {
+                thisB.loadNames().then( function() {
+                    thisB.loadUserCSS().then( function() {
 
-                    thisB.initTrackMetadata();
-                    thisB.loadRefSeqs().then( function() {
+                        thisB.initTrackMetadata();
+                        thisB.loadRefSeqs().then( function() {
 
-                       // figure out our initial location
-                       var initialLocString = thisB._initialLocation();
-                       var initialLoc = Util.parseLocString( initialLocString );
-                       if (initialLoc && initialLoc.ref && thisB.allRefs[initialLoc.ref]) {
-                           thisB.refSeq = thisB.allRefs[initialLoc.ref];
-                       }
+                           // figure out our initial location
+                           var initialLocString = thisB._initialLocation();
+                           var initialLoc = Util.parseLocString( initialLocString );
+                           if (initialLoc && initialLoc.ref && thisB.allRefs[initialLoc.ref]) {
+                               thisB.refSeq = thisB.allRefs[initialLoc.ref];
+                           }
 
-                       thisB.initView().then( function() {
-                           Touch.loadTouch(); // init touch device support
-                           if( initialLocString )
-                               thisB.navigateTo( initialLocString );
+                           thisB.initView().then( function() {
+                               Touch.loadTouch(); // init touch device support
+                               if( initialLocString )
+                                   thisB.navigateTo( initialLocString );
 
-                           // figure out what initial track list we will use:
-                           var tracksToShow = [];
-                           // always add alwaysOnTracks, regardless of any other track params
-                           if (thisB.config.alwaysOnTracks) { tracksToShow = tracksToShow.concat(thisB.config.alwaysOnTracks.split(",")); }
-                           // add tracks specified in URL track param,
-                           //    if no URL track param then add last viewed tracks via tracks cookie
-                           //    if no URL param and no tracks cookie, then use defaultTracks
-                           if (thisB.config.forceTracks)   { tracksToShow = tracksToShow.concat(thisB.config.forceTracks.split(",")); }
-                           else if (thisB.cookie("tracks")) { tracksToShow = tracksToShow.concat(thisB.cookie("tracks").split(",")); }
-                           else if (thisB.config.defaultTracks) { tracksToShow = tracksToShow.concat(thisB.config.defaultTracks.split(",")); }
-                           // currently, force "DNA" _only_ if no other guides as to what to show?
-                           //    or should this be changed to always force DNA to show?
-                           if (tracksToShow.length == 0) { tracksToShow.push("DNA"); }
-                           // eliminate track duplicates (may have specified in both alwaysOnTracks and defaultTracks)
-                           tracksToShow = Util.uniq(tracksToShow);
-                           thisB.showTracks( tracksToShow );
+                               // figure out what initial track list we will use:
+                               var tracksToShow = [];
+                               // always add alwaysOnTracks, regardless of any other track params
+                               if (thisB.config.alwaysOnTracks) { tracksToShow = tracksToShow.concat(thisB.config.alwaysOnTracks.split(",")); }
+                               // add tracks specified in URL track param,
+                               //    if no URL track param then add last viewed tracks via tracks cookie
+                               //    if no URL param and no tracks cookie, then use defaultTracks
+                               if (thisB.config.forceTracks)   { tracksToShow = tracksToShow.concat(thisB.config.forceTracks.split(",")); }
+                               else if (thisB.cookie("tracks")) { tracksToShow = tracksToShow.concat(thisB.cookie("tracks").split(",")); }
+                               else if (thisB.config.defaultTracks) { tracksToShow = tracksToShow.concat(thisB.config.defaultTracks.split(",")); }
+                               // currently, force "DNA" _only_ if no other guides as to what to show?
+                               //    or should this be changed to always force DNA to show?
+                               if (tracksToShow.length == 0) { tracksToShow.push("DNA"); }
+                               // eliminate track duplicates (may have specified in both alwaysOnTracks and defaultTracks)
+                               tracksToShow = Util.uniq(tracksToShow);
+                               thisB.showTracks( tracksToShow );
 
-                           thisB.passMilestone( 'completely initialized', { success: true } );
-                       });
-                       thisB.reportUsageStats();
+                               thisB.passMilestone( 'completely initialized', { success: true } );
+                           });
+                           thisB.reportUsageStats();
+                        });
                     });
                 });
             });
