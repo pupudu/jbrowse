@@ -39,3 +39,4 @@ src/util/
 src/xstyle/
 node_modules
 .idea/**
+*.swp
