@@ -87,8 +87,9 @@ return declare( null, {
             configs[newName][this.indexConfKey] = this._makeBlob( resource );
             return true;
         }
-        else
+        else {
             return false;
+        }
     },
 
     // try to merge any singleton file and index stores.  currently can only do this if there is one of each
@@ -99,12 +100,12 @@ return declare( null, {
         var singletonFileCount = 0;
         for( var n in configs ) {
             var conf = configs[n];
-            if( (conf.bai || conf[this.indexUrlConfKey]) && ! ( conf.bam || conf[this.fileUrlConfKey] ) ) {
+            if( (conf.bai || conf[this.indexConfKey]) && ! ( conf.bam || conf[this.fileConfKey] ) ) {
                 // singleton Index
                 singletonIndexCount++;
                 singletonIndexes[n] = conf;
             }
-            else if(( conf.bam || conf[this.fileUrlConfKey] ) && ! ( conf.bai || conf[this.indexUrlConfKey]) ) {
+            else if(( conf.bam || conf[this.fileConfKey] ) && ! ( conf.bai || conf[this.indexConfKey]) ) {
                 // singleton File
                 singletonFileCount++;
                 singletonFiles[n] = conf;
@@ -116,8 +117,8 @@ return declare( null, {
         if( singletonFileCount == 1 && singletonIndexCount == 1 ) {
             for( var indexName in singletonIndexes ) {
                 for( var fileName in singletonFiles ) {
-                    if( singletonIndexes[indexName][this.indexUrlConfKey] )
-                        singletonFiles[fileName][this.indexUrlConfKey] = singletonIndexes[indexName][this.indexUrlConfKey];
+                    if( singletonIndexes[indexName][this.indexConfKey] )
+                        singletonFiles[fileName][this.indexConfKey] = singletonIndexes[indexName][this.indexConfKey];
                     if( singletonIndexes[indexName].bai )
                         singletonFiles[fileName].bai = singletonIndexes[indexName].bai;
 
@@ -134,7 +135,7 @@ return declare( null, {
 
         // delete any remaining singleton Files, unless they are URLs
         for( var fileName in singletonFiles ) {
-            if( ! configs[fileName][this.fileUrlConfKey] )
+            if( ! configs[fileName][this.fileConfKey] )
                 delete configs[fileName];
         }
     },
