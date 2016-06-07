@@ -1306,7 +1306,6 @@ openFasta: function() {
                           if( storeConf && typeof storeConf == 'object' ) {
                               delete conf.store;
                               storeConf.name = 'refseqs'; // important to make it the refseq store
-                              console.log('here store',storeConf);
                               conf.store = this.addStoreConfig( storeConf.name, storeConf );
                           }
                       }, newBrowser);
@@ -1327,7 +1326,6 @@ openFasta: function() {
                 );
             }
             else if( confs[0].store.blob ) {
-                console.log('here 2bit',confs[0].store);
                 new TwoBit({
                     browser: this,
                     blob: confs[0].store.blob
