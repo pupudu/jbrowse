@@ -2,22 +2,19 @@
 * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
 * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
 */
-var url1 = "http://sid.projects.mrt.ac.lk/1";
+
 var disqus_config = function () {
-  //alert(url1);
- this.page.url = url1; // Replace PAGE_URL with your page's canonical URL variable
-//this.page.identifier = "test1"; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+  this.page.identifier = "identifier_5";   // Not usefull in the context of JBrowse
 };
 
-function reload(){
+function reload(id_num){
   DISQUS.reset({
   reload: true,
   config: function () {  
     //alert(this.page.url);
-    //this.page.identifier = "newidentifier8";  
-    this.page.url = "http://sid.projects.mrt.ac.lk/2";
-    this.page.title = "New Thread4";
-  
+    this.page.identifier = "identifier_"+id_num;   // Not usefull in the context of JBrowse
+    // this.page.url = "http://sid.projects.mrt.ac.lk/id_test_3";
+    // this.page.title = "New Thread id_test_3";
   }
   });
 }

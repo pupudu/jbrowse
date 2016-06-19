@@ -235,7 +235,7 @@ img.sidebar-toggle{
     }
 
     #sidebar-wrapper {
-        width: 500px;
+        width: 560px;
     }
 
     #wrapper.toggled #sidebar-wrapper {
@@ -255,7 +255,7 @@ img.sidebar-toggle{
     div.toggler{
       height: 100%;
       width: 10px;
-      background-color: #f00;
+      background-color: #396494;
       position: absolute;
       left: -15px;
       z-index: 1000;
@@ -272,7 +272,7 @@ img.sidebar-toggle{
 
     <div id="wrapper" class="">
       <div id="sidebar-wrapper">
-        <div class = "toggler" onclick="$('#wrapper').toggleClass('toggled')"></div>
+        <div class = "toggler" onclick="$('#wrapper').toggleClass('toggled');reload();"></div>
         <div class="sidebar-content">
           <ul class="sidebar-nav">
               <li class="sidebar-brand">
