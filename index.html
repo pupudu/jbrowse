@@ -32,7 +32,7 @@
         // free to move it into function scope if you want to keep it
         // out of the global namespace
         var JBrowse;
-        require(['JBrowse/Browser', 'dojo/io-query', 'dojo/json' ],
+        require(['JBrowse/Browser', 'dojo/io-query', 'dojo/json' , 'plugins/SocialFeatures/js/disqus_actions' ],
              function (Browser,ioQuery,JSON) {
                    // the initial configuration of this JBrowse
                    // instance
@@ -205,6 +205,7 @@
     height: 65px;
     font-size: 18px;
     line-height: 60px;
+    text-align: center;
 }
 
 .sidebar-nav > .sidebar-brand a {
@@ -275,11 +276,13 @@ img.sidebar-toggle{
         <div class="sidebar-content">
           <ul class="sidebar-nav">
               <li class="sidebar-brand">
-                  <a href="#" onclick="$('#wrapper').toggleClass('toggled')"> Hide Menu </a>
-                  <a href="#" onclick="reload();"> Change Thread </a>
+                Comments
+                <!-- <a href="#" onclick="reload();"> Change Thread </a> -->
               </li>
               <!-- <div id="disqus_thread" style="height: 20%; width: 50%; left: 40%; position: absolute; top: 50vh;"></div> -->
-               <div id="disqus_thread"></div>
+              <li>
+                <div id="disqus_thread"></div>
+              </li> 
           </ul>
         </div>
       </div>
@@ -290,45 +293,7 @@ img.sidebar-toggle{
     <div id="GenomeBrowser" style="height: 95%; width: 100%; padding: 0; border: 0;"></div>
     <div style="display: none" id="jBrowseMain">JBrowseDefaultMainPage</div>
     
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 
-
-    <script>
-/**
-* RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-* LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-*/
-var url1 = "http://sid.projects.mrt.ac.lk/1";
-var disqus_config = function () {
-  //alert(url1);
- this.page.url = url1; // Replace PAGE_URL with your page's canonical URL variable
-//this.page.identifier = "test1"; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-
-function reload(){
-  DISQUS.reset({
-  reload: true,
-  config: function () {  
-    //alert(this.page.url);
-    //this.page.identifier = "newidentifier8";  
-    this.page.url = "http://sid.projects.mrt.ac.lk/2";
-    this.page.title = "New Thread4";
-  
-  }
-  });
-}
-(function() { // DON'T EDIT BELOW THIS LINE
-var d = document, s = d.createElement('script');
-
-s.src = '//jbrowse.disqus.com/embed.js';
-
-s.setAttribute('data-timestamp', +new Date());
-(d.head || d.body).appendChild(s);
-})();
-
-
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
-
-<!-- <div id="disqus_thread" style="max-width: 500px"></div> -->
   </body>
 </html>
