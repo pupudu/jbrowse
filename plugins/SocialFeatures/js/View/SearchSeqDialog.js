@@ -55,6 +55,24 @@ return declare( ActionBarDialog, {
         
         content.searchBox = new dTextBox({}).placeAt( searchBoxDiv );
 
+
+
+        // Render 'treat as create new' checkbox
+
+        var textOptionsDiv = dom.create('div', {
+            className: "section"
+        }, container );
+
+        var isNewDiv = dom.create("div", {
+            className: "checkboxdiv"
+        }, textOptionsDiv );
+        content.isNew = new dCheckBox({
+                                        label: "Start new thread",
+                                        id: "new_thread"
+                                    }).placeAt( isNewDiv );
+        dom.create( "label", { "for": "new_thread", innerHTML: "Start new thread" }, isNewDiv );
+
+
         return container;
     },
 
@@ -62,6 +80,7 @@ return declare( ActionBarDialog, {
         var content = this.content;
         return {
             expr: content.searchBox.get('value'),
+            isNew: content.isNew.checked,
             maxLen: 100
         };
     },
@@ -74,9 +93,16 @@ return declare( ActionBarDialog, {
                             iconClass: 'dijitIconSearch',
                             onClick: function() {
                                 var searchParams = thisB._getSearchParams();
-                                console.log(searchParams);
-                                //thisB.callback( searchParams );
-                                reload('identifier_'+searchParams.expr);
+                                // console.log(searchParams);
+                                if(searchParams.isNew){
+                                    startThread(
+                                        "http://jbrowse.org/identifier_"+searchParams.expr,
+                                        'identifier_'+ searchParams.expr,
+                                        'New Thread #'+ searchParams.expr
+                                    );
+                                }else{
+                                    reload('identifier_'+searchParams.expr);
+                                }
                                 $('#wrapper').removeClass('toggled');
                                 thisB.hide();
                             }
