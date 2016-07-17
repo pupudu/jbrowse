@@ -9,6 +9,7 @@
 .search-dialog .translateContainer {
     display:inline;
 }
+
 .search-dialog .translateContainer > label {
     margin-left: 0.4em;
 }
@@ -26,6 +27,17 @@
 .search-dialog .dijitTextBox {
     width: 25em;
 }
+
 .search-dialog .dijitTextBox * {
     font-size: 110%;
+}
+
+.comments, .plus-comments, .minus-comments {
+    position:absolute;
+    height: 7px;
+    background-repeat: repeat-x;
+    cursor: pointer;
+    min-width: 1px;
+    z-index: 10;
+    background-color: #dd3333 !important;
 }
