@@ -125,14 +125,15 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 { label: 'View Comment',
                     title: '{type} {name}',
                     action: function () {
-                        reload(this.feature.get('name'));
+                        reload(this.feature.get('name',"Dodan"));
                     },
                     iconClass: 'dijitIconMail'
                 },
                 { label: 'Delete Comment',
                     action: function() {
                         // console.log(this.feature.set('name','identifier_8'));
-                        var fea = new SimpleFeature();
+                        this.feature.set('name','identifier_1');
+                        // var fea = new SimpleFeature();
                     },
                     iconClass: 'dijitIconDelete'
                 }
@@ -337,7 +338,6 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         var descriptionScale = this.config.style.descriptionScale || stats.featureDensity * this.config.style._defaultDescriptionScale;
 
         var curTrack = this;
-        console.log(this);
         var featCallback = dojo.hitch(this,function( feature ) {
             var uniqueId = feature.id();
             if( ! this._featureIsRendered( uniqueId ) ) {

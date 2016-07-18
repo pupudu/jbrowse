@@ -3,6 +3,8 @@ define([
            'dojo/_base/lang',
            'dojo/Deferred',
            'dojo/request/xhr',
+           'dojo/data/ItemFileWriteStore',
+           'dojo/store/DataStore',
            'JBrowse/Store/SeqFeature',
            'JBrowse/Store/DeferredFeaturesMixin',
            'JBrowse/Store/DeferredStatsMixin',
@@ -16,6 +18,8 @@ define([
            lang,
            Deferred,
            xhr,
+           ItemFileWriteStore,
+           DataStore,
            SeqFeatureStore,
            DeferredFeaturesMixin,
            DeferredStatsMixin,
@@ -78,6 +82,7 @@ return declare( SeqFeatureStore,
 
             // fetch the trackdata
             var thisB = this;
+            console.log(url);
             xhr.get( url, { handleAs: 'json', failOk: true })
                .then( function( trackInfo, request ) {
                           //trackInfo = JSON.parse( trackInfo );
@@ -265,7 +270,15 @@ return declare( SeqFeatureStore,
     _decorate_feature: function( accessors, feature, id, parent ) {
         feature.get = accessors.get;
         // possibly include set method in decorations? not currently
-        //    feature.set = accessors.set;
+        // feature.set = accessors.set;
+        feature.set = function(){
+            datastore = new ItemFileWriteStore({url:"sample_data/json/volvox/tracks/Comments/ctgA/trackData.json"});
+            store = new DataStore({store: datastore});
+            store.put({id:"b"}).then(function(results){
+                console.log(results);
+            });
+
+        };
         feature.tags = accessors.tags;
         feature._uniqueID = id;
         feature.id = idfunc;
