@@ -1,0 +1,71 @@
+{
+   "names" : {
+      "type" : "Hash",
+      "url" : "names/"
+   },
+   "plugins" : [
+      "NeatHTMLFeatures",
+      "NeatCanvasFeatures",
+      "HideTrackLabels"
+   ],
+   "tracks" : [
+      {
+         "seqType" : "dna",
+         "category" : "Reference sequence",
+         "chunkSize" : 20000,
+         "type" : "SequenceTrack",
+         "key" : "Reference sequence",
+         "storeClass" : "JBrowse/Store/Sequence/StaticChunked",
+         "label" : "DNA",
+         "urlTemplate" : "seq/{refseq_dirpath}/{refseq}-"
+      },
+      {
+         "category" : "Genes",
+         "feature" : [
+            "gene"
+         ],
+         "style" : {
+            "className" : "feature5",
+            "subfeatureClasses" : {
+               "CDS" : "transcript-CDS"
+            },
+            "arrowheadClass" : "transcript-arrowhead"
+         },
+         "key" : "Protein-coding genes",
+         "type" : "FeatureTrack",
+         "track" : "Genes",
+         "storeClass" : "JBrowse/Store/SeqFeature/NCList",
+         "subfeatures" : true,
+         "autocomplete" : "all",
+         "compress" : 0,
+         "label" : "Genes",
+         "urlTemplate" : "tracks/Genes/{refseq}/trackData.json"
+      },
+      {
+         "feature" : [
+            "mRNA"
+         ],
+         "category" : "Genes",
+         "style" : {
+            "subfeatureClasses" : {
+               "UTR" : "transcript-UTR",
+               "CDS" : "transcript-CDS"
+            },
+            "arrowheadClass" : "transcript-arrowhead",
+            "className" : "transcript"
+         },
+         "storeClass" : "JBrowse/Store/SeqFeature/NCList",
+         "track" : "transcript_with_no_features",
+         "subfeatures" : true,
+         "autocomplete" : "all",
+         "description" : 1,
+         "compress" : 0,
+         "label" : "transcript_with_no_features",
+         "urlTemplate" : "tracks/transcript_with_no_features/{refseq}/trackData.json",
+         "key" : "Exonerate predictions (misconfigured for test, and with a long description)",
+         "type" : "FeatureTrack"
+      }
+   ],
+   "dataset_id" : "yeast",
+   "formatVersion" : 1
+}
