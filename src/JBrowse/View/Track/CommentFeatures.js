@@ -134,17 +134,47 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 },
                 { label: 'Delete Comment',
                     action: function() {
-                        console.log("Try delete");
+                        console.log(scope);
                         scope.updateComment(this.feature,555,1920,undefined,undefined,undefined,'identifier_4',undefined,"remove");
                     },
                     iconClass: 'dijitIconDelete'
                 },
                 { label: 'Insert Comment',
                     action: function() {
-                        console.log("Try insert");
-                        scope.updateComment(this.feature,2555,3420,undefined,undefined,undefined,'identifier_8',undefined,"insert");
+                        scope.updateComment(this.feature,undefined,undefined,undefined,undefined,undefined,'identifier_8',undefined,"insert");
                     },
                     iconClass: 'dijitIconDelete'
+                },
+                { label: 'Edit Name',
+                    action: function() {
+                        var name = prompt("Enter new name");
+                        scope.updateComment(this.feature,undefined,undefined,undefined,undefined,undefined,name,undefined,"update");
+                        this.feature.set('name',name);
+                    },
+                    iconClass: 'dijitIconTask'
+                },
+                { label: 'Change Range',
+                    action: function() {
+                        var start = prompt("Enter starting point",500);
+                        var end = prompt("Enter Ending point",1000);
+                        scope.updateComment(this.feature,start,end,undefined,undefined,undefined,undefined,undefined,"update");
+                        this.feature.set('start',start);
+                        this.feature.set('end',start);
+                    },
+                    iconClass: 'dijitIconTask'
+                },
+                { label: 'Start thread',
+                    action: function() {
+                        var url = prompt("Enter a unique url to identify thread");
+                        var id = prompt("Enter a unique Id to identify thread");
+                        var title = prompt("Enter title for thread");
+                        var start = prompt("Enter starting point",500);
+                        var end = prompt("Enter Ending point",1000);
+
+                        startThread(url,id,title);
+                        scope.updateComment(this.feature,start,end,undefined,undefined,undefined,id,undefined,"insert");
+                    },
+                    iconClass: 'dijitLeaf'
                 }
             ]
         });
