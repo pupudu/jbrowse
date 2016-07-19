@@ -134,15 +134,15 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 },
                 { label: 'Delete Comment',
                     action: function() {
-                        this.feature.set('name','identifier_1');
+                        console.log("Try delete");
                         scope.updateComment(this.feature,555,1920,undefined,undefined,undefined,'identifier_4',undefined,"remove");
                     },
                     iconClass: 'dijitIconDelete'
                 },
                 { label: 'Insert Comment',
                     action: function() {
+                        console.log("Try insert");
                         scope.updateComment(this.feature,2555,3420,undefined,undefined,undefined,'identifier_8',undefined,"insert");
-                        this.feature.set('name','identifier_1');
                     },
                     iconClass: 'dijitIconDelete'
                 }
@@ -151,6 +151,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
     },
 
     updateComment: function (feature, start, end, strand, source, seq_id, name, type, action) {
+        console.log("update comment got called");
         var start_o = feature.get('start');
         var end_o = feature.get('end');
         var strand_o = feature.get('strand');
