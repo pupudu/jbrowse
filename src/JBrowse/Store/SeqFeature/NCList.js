@@ -270,7 +270,7 @@ return declare( SeqFeatureStore,
     _decorate_feature: function( accessors, feature, id, parent ) {
         feature.get = accessors.get;
         // possibly include set method in decorations? not currently
-        // feature.set = accessors.set;
+        feature.set = accessors.set;
         feature.set = function(){
             datastore = new ItemFileWriteStore({url:"sample_data/json/volvox/tracks/Comments/ctgA/trackData.json"});
             store = new DataStore({store: datastore});
