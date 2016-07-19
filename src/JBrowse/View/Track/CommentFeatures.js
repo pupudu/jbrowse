@@ -141,7 +141,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 },
                 { label: 'Insert Comment',
                     action: function() {
-                        scope.updateComment(this.feature,undefined,undefined,undefined,undefined,undefined,'identifier_8',undefined,"insert");
+                        scope.updateComment(this.feature,2554,3420,undefined,undefined,undefined,'identifier_8',undefined,"insert");
                     },
                     iconClass: 'dijitIconDelete'
                 },
