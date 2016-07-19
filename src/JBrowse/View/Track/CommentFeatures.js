@@ -84,6 +84,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
      * @private
      */
     _defaultConfig: function() {
+        var scope = this;
         return Util.deepUpdate(
             lang.clone( this.inherited(arguments) ),
             {
@@ -131,13 +132,44 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 },
                 { label: 'Delete Comment',
                     action: function() {
-                        // console.log(this.feature.set('name','identifier_8'));
                         this.feature.set('name','identifier_1');
-                        // var fea = new SimpleFeature();
+                        scope.updateComment(this.feature,555,1920,undefined,undefined,undefined,'identifier_4',undefined,"remove");
+                    },
+                    iconClass: 'dijitIconDelete'
+                },
+                { label: 'Insert Comment',
+                    action: function() {
+                        scope.updateComment(this.feature,2555,3420,undefined,undefined,undefined,'identifier_8',undefined,"insert");
                     },
                     iconClass: 'dijitIconDelete'
                 }
             ]
+        });
+    },
+
+    updateComment: function (feature, start, end, strand, source, seq_id, name, type, action) {
+        var start_o = feature.get('start');
+        var end_o = feature.get('end');
+        var strand_o = feature.get('strand');
+        var source_o = feature.get('source');
+        var seq_id_o = feature.get('seq_id');
+        var name_o = feature.get('name');
+        var type_o = feature.get('type');
+
+        var oldFeature = [0, start_o, end_o, strand_o, source_o, seq_id_o, name_o, type_o];
+        var newFeature = [0, start || start_o, end || end_o, strand || strand_o, source || source_o, seq_id || seq_id_o, name || name_o, type || type_o];
+        // console.log(oldFeature);
+        // console.log(newFeature);
+        xhr("http://localhost:3000/updateThread", {
+            handleAs: "json",
+            method: 'POST',
+            data: {
+                old: oldFeature,
+                new: newFeature,
+                action: action
+            }
+        }).then(function (data) {
+            // console.log(data);
         });
     },
 

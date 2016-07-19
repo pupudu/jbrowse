@@ -39,5 +39,7 @@
     cursor: pointer;
     min-width: 1px;
     z-index: 10;
-    background-color: #dd3333 !important;
+    background: #dd3333 !important;
+    height: 15px;
+    border-radius: 5px 5px 5px 0;
 }
