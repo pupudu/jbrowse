@@ -161,7 +161,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         var newFeature = [0, start || start_o, end || end_o, strand || strand_o, source || source_o, seq_id || seq_id_o, name || name_o, type || type_o];
         // console.log(oldFeature);
         // console.log(newFeature);
-        xhr("http://localhost:3000/updateThread", {
+        xhr("/updateThread", {
             handleAs: "json",
             method: 'POST',
             data: {
