@@ -159,7 +159,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                         var end = prompt("Enter Ending point",1000);
                         scope.updateComment(this.feature,start,end,undefined,undefined,undefined,undefined,undefined,"update");
                         this.feature.set('start',start);
-                        this.feature.set('end',start);
+                        this.feature.set('end',end);
                     },
                     iconClass: 'dijitIconTask'
                 },
