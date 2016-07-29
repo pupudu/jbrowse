@@ -48,7 +48,6 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
     /**
      * A track that draws discrete features using `div` elements.
      * @constructs
-     * @constructs
      * @extends JBrowse.View.Track.BlockBased
      * @param args.config {Object} track configuration. Must include key, label
      * @param args.refSeq {Object} reference sequence object with name, start,
