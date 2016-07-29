@@ -37,3 +37,22 @@ function startThread(url,identifier,title){
   s.setAttribute('data-timestamp', +new Date());
   (d.head || d.body).appendChild(s);
 })();
+
+/**
+ * Declare action to hide sidebar when clicked on any other spot on screen
+ * */
+(function toggler() {
+  window.setTimeout(function () {
+    console.log("Toggler initiated");
+    try {
+      $('body').click(function () {
+       $('#wrapper').addClass('toggled');
+      });
+      $('#wrapper,#toggle-menu').click(function (e) {
+        e.stopPropagation(); //this call will cancel the execution bubble
+      });
+    }
+    catch (e) {
+    }
+  }, 3000);
+})();
