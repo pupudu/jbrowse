@@ -86,7 +86,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
      * @private
      */
     _defaultConfig: function() {
-        var scope = this;
+        var _this = this;
         return Util.deepUpdate(
             lang.clone( this.inherited(arguments) ),
             {
@@ -121,58 +121,81 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
             },
             events: {
                 click: function(){
-                    reload(this.feature.get('name'));
+                    var name = this.feature.get('name');
+                    reload(this.feature.get('thread_id'));
+                    $('#wrapper').removeClass('toggled');
+                    // console.log(this.track);
+                    // this.track.redraw();
+                    this.track.redraw();
+                    $('.sidebar-brand')[0].textContent = name;
                 }
             },
             menuTemplate: [
-                { label: 'View Comment',
-                    title: '{type} {name}',
+                { label: 'Load Thread',
                     action: function () {
-                        reload(this.feature.get('name',"Dodan"));
+                        reload(this.feature.get('thread_id'));
+                        $('#wrapper').removeClass('toggled');
+                        this.track.redraw();
                     },
                     iconClass: 'dijitIconMail'
                 },
-                { label: 'Delete Comment',
+                { label: 'Delete Thread Link',
                     action: function() {
-                        console.log(scope);
-                        scope.updateComment(this.feature,555,1920,undefined,undefined,undefined,'identifier_4',undefined,"remove");
+                        _this.updateComment({
+                            feature:this.feature,
+                            action:"remove"
+                        });
+                        this.track.redraw();
                     },
                     iconClass: 'dijitIconDelete'
                 },
-                { label: 'Insert Comment',
+                { label: 'Change Associated Thread',
                     action: function() {
-                        scope.updateComment(this.feature,2554,3420,undefined,undefined,undefined,'identifier_8',undefined,"insert");
-                    },
-                    iconClass: 'dijitIconDelete'
-                },
-                { label: 'Edit Name',
-                    action: function() {
-                        var name = prompt("Enter new name");
-                        scope.updateComment(this.feature,undefined,undefined,undefined,undefined,undefined,name,undefined,"update");
-                        this.feature.set('name',name);
+                        var thread_id = prompt("Enter thread Id");
+                        _this.updateComment({
+                            feature:this.feature,
+                            thread_id:thread_id,
+                            action:"update"
+                        });
+                        this.feature.set('thread_id',thread_id);
+                        this.track.redraw();
                     },
                     iconClass: 'dijitIconTask'
                 },
-                { label: 'Change Range',
+                { label: 'Update Range',
                     action: function() {
                         var start = prompt("Enter starting point",500);
                         var end = prompt("Enter Ending point",1000);
-                        scope.updateComment(this.feature,start,end,undefined,undefined,undefined,undefined,undefined,"update");
+                        _this.updateComment({
+                            feature: this.feature,
+                            start: start,
+                            end: end,
+                            action:"update"
+                        });
                         this.feature.set('start',start);
                         this.feature.set('end',end);
+                        this.track.redraw();
                     },
                     iconClass: 'dijitIconTask'
                 },
-                { label: 'Start thread',
+                { label: 'Start new thread',
                     action: function() {
                         var url = prompt("Enter a unique url to identify thread");
-                        var id = prompt("Enter a unique Id to identify thread");
-                        var title = prompt("Enter title for thread");
+                        var thread_id = prompt("Enter a unique Id to identify thread");
+                        var name = prompt("Enter title for thread");
                         var start = prompt("Enter starting point",500);
                         var end = prompt("Enter Ending point",1000);
 
-                        startThread(url,id,title);
-                        scope.updateComment(this.feature,start,end,undefined,undefined,undefined,id,undefined,"insert");
+                        startThread(url,thread_id,name);
+                        _this.updateComment({
+                            feature:this.feature,
+                            start:start,
+                            end:end,
+                            thread_id:thread_id,
+                            name: name,
+                            action:"insert"
+                        });
+                        this.track.redraw();
                     },
                     iconClass: 'dijitLeaf'
                 }
@@ -180,18 +203,15 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         });
     },
 
-    updateComment: function (feature, start, end, strand, source, seq_id, name, type, action) {
+    updateComment: function (args) {
         console.log("update comment got called");
-        var start_o = feature.get('start');
-        var end_o = feature.get('end');
-        var strand_o = feature.get('strand');
-        var source_o = feature.get('source');
-        var seq_id_o = feature.get('seq_id');
-        var name_o = feature.get('name');
-        var type_o = feature.get('type');
+        var start_o = args.feature.get('start');
+        var end_o = args.feature.get('end');
+        var seq_id_o = args.feature.get('seq_id');
+        var name_o = args.feature.get('name');
 
-        var oldFeature = [0, start_o, end_o, strand_o, source_o, seq_id_o, name_o, type_o];
-        var newFeature = [0, start || start_o, end || end_o, strand || strand_o, source || source_o, seq_id || seq_id_o, name || name_o, type || type_o];
+        var oldFeature = [0, start_o, end_o, seq_id_o, name_o];
+        var newFeature = [0, args.start || start_o, args.end || end_o, args.seq_id || seq_id_o, args.name || name_o];
         // console.log(oldFeature);
         // console.log(newFeature);
         xhr("/updateThread", {
@@ -200,7 +220,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
             data: {
                 old: oldFeature,
                 new: newFeature,
-                action: action
+                action: args.action
             }
         }).then(function (data) {
             // console.log(data);
@@ -412,6 +432,18 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 if( this.filterFeature( feature ) )  {
                     this.addFeatureToBlock( feature, uniqueId, block, scale, labelScale, descriptionScale,
                                             containerStart, containerEnd );
+                    window.setTimeout(function(){
+                        try {
+                            $('body').click(function () {
+                                $('#wrapper').addClass('toggled');
+                            });
+                            $('.comment').click(function (e) {
+                                e.stopPropagation(); //this call will cancel the execution bubble
+                            });
+                        }
+                        catch (e) {
+                        }
+                    },2000);
                }
             }
         });
@@ -667,6 +699,7 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         }
 
         dojo.addClass(featDiv, "feature");
+        dojo.addClass(featDiv, "comment");
         var className = this.config.style.className;
         if (className == "{type}") { className = feature.get('type'); }
         var strand = feature.get('strand');
