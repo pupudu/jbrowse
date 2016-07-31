@@ -19,7 +19,7 @@ define( [
             'JBrowse/View/Track/_TrackDetailsStatsMixin',
             'JBrowse/Util',
             'JBrowse/View/GranularRectLayout',
-            'JBrowse/Model/SimpleFeature'
+            'JBrowse/Model/ArrayRepr'
         ],
       function( declare,
                 lang,
@@ -41,13 +41,12 @@ define( [
                 TrackDetailsStatsMixin,
                 Util,
                 Layout,
-                SimpleFeature
+                ArrayRepr
               ) {
 
 var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDetailMixin, TrackDetailsStatsMixin ], {
     /**
      * A track that draws discrete features using `div` elements.
-     * @constructs
      * @constructs
      * @extends JBrowse.View.Track.BlockBased
      * @param args.config {Object} track configuration. Must include key, label
@@ -80,6 +79,11 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         this.showLabels = this.config.style.showLabels;
 
         this._setupEventHandlers();
+
+        this.newFeats = [
+            [0, 500, 3500, "ctgA", "bf1", "my title"],
+            [0, 1500, 5500, "ctgA", "bf2", "New dodan"]
+        ];
     },
 
     /**
@@ -125,9 +129,6 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                     var name = this.feature.get('name');
                     reload(this.feature.get('thread_id'));
                     $('#wrapper').removeClass('toggled');
-                    // console.log(this.track);
-                    // this.track.redraw();
-                    this.track.redraw();
                     $('.sidebar-brand')[0].textContent = name;
                 }
             },
@@ -145,8 +146,12 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                         _this.updateComment({
                             feature:this.feature,
                             action:"remove"
+                        },function() {
+                            this.feature.set('start', 200000);
+                            this.feature.set('end', 200000);
+                            this.feature.set('name', '');
+                            this.track.redraw();
                         });
-                        this.track.redraw();
                     },
                     iconClass: 'dijitIconDelete'
                 },
@@ -157,9 +162,10 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                             feature:this.feature,
                             thread_id:thread_id,
                             action:"update"
+                        },function() {
+                            this.feature.set('thread_id',thread_id);
+                            this.track.redraw();
                         });
-                        this.feature.set('thread_id',thread_id);
-                        this.track.redraw();
                     },
                     iconClass: 'dijitIconTask'
                 },
@@ -172,10 +178,11 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                             start: start,
                             end: end,
                             action:"update"
+                        },function() {
+                            this.feature.set('start',start);
+                            this.feature.set('end',end);
+                            this.track.redraw();
                         });
-                        this.feature.set('start',start);
-                        this.feature.set('end',end);
-                        this.track.redraw();
                     },
                     iconClass: 'dijitIconTask'
                 },
@@ -195,8 +202,9 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                             thread_id:thread_id,
                             name: name,
                             action:"insert"
+                        },function() {
+                            this.track.redraw();
                         });
-                        this.track.redraw();
                     },
                     iconClass: 'dijitLeaf'
                 }
@@ -445,9 +453,31 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                         catch (e) {
                         }
                     },2000);
-               }
+                }
             }
         });
+
+        var deco = new ArrayRepr([
+            {
+                attributes: [
+                    "Start",
+                    "End",
+                    "Seq_id",
+                    "thread_id",
+                    "name"
+                ]
+            }
+        ]);
+        for (var i = 0; i < this.newFeats.length; i++) {
+            var cfeat = this.newFeats[i];
+
+            this.store._decorate_feature(deco.accessors(),cfeat, id);
+            var id = cfeat.get('thread_id');
+
+            if(!this._featureIsRendered(id)) {
+                this.addFeatureToBlock(cfeat, id, block, scale, labelScale, descriptionScale, containerStart, containerEnd);
+            }
+        }
 
         this.store.getFeatures( { ref: this.refSeq.name,
                                   start: leftBase,
@@ -665,7 +695,8 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
             return null;
         }
 
-        var featDiv = this.config.hooks.create(this, feature );
+        var featDiv = this.config.hooks.create();
+
         this._connectFeatDivHandlers( featDiv );
         // NOTE ANY DATA SET ON THE FEATDIV DOM NODE NEEDS TO BE
         // MANUALLY DELETED IN THE cleanupBlock METHOD BELOW
@@ -686,7 +717,6 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         featDiv._labelScale = labelScale;
         featDiv._descriptionScale = descriptionScale;
 
-
         block.featureNodes[uniqueId] = featDiv;
 
         // record whether this feature protrudes beyond the left and/or right side of the block
@@ -699,8 +729,11 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
             block.rightOverlaps.push( uniqueId );
         }
 
+        var thread_id = feature.get('thread_id');
+
         dojo.addClass(featDiv, "feature");
         dojo.addClass(featDiv, "comment");
+        dojo.addClass(featDiv, thread_id);
         var className = this.config.style.className;
         if (className == "{type}") { className = feature.get('type'); }
         var strand = feature.get('strand');
@@ -776,9 +809,10 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         }
 
         if ( ( name || description ) && this.showLabels && scale >= labelScale ) {
+            var classes = '"feature-name '+thread_id+'"';
             var labelDiv = dojo.create( 'div', {
                     className: "feature-label" + ( highlighted ? ' highlighted' : '' ),
-                    innerHTML:  ( name ? '<div class="feature-name">'+name+'</div>' : '' )
+                    innerHTML:  ( name ? '<div class='+classes+'>'+name+'</div>' : '' )
                                +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
                     style: {
                         top: (top + this.glyphHeight + 2) + "px",
