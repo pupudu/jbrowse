@@ -81,8 +81,8 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
         this._setupEventHandlers();
 
         this.newFeats = [
-            [0, 500, 3500, "ctgA", "bf1", "my title"],
-            [0, 1500, 5500, "ctgA", "bf2", "New dodan"]
+            [0, 4500, 5500, "ctgA", "bf1", "my title"],
+            [0, 4200, 4600, "ctgA", "bf2", "New dodan"]
         ];
     },
 
@@ -468,14 +468,18 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
                 ]
             }
         ]);
+
         for (var i = 0; i < this.newFeats.length; i++) {
             var cfeat = this.newFeats[i];
 
             this.store._decorate_feature(deco.accessors(),cfeat, id);
             var id = cfeat.get('thread_id');
-
-            if(!this._featureIsRendered(id)) {
-                this.addFeatureToBlock(cfeat, id, block, scale, labelScale, descriptionScale, containerStart, containerEnd);
+            if(cfeat.get('start')>block.startBase && cfeat.get('start')<block.endBase){
+                // console.log(block.startBase);
+                if(!this._featureIsRendered(id)) {
+                    // console.log("is not rendered");
+                    this.addFeatureToBlock(cfeat, id, block, scale, labelScale, descriptionScale, containerStart, containerEnd);
+                }
             }
         }
 
@@ -1081,16 +1085,36 @@ var CommentFeatures = declare( [ BlockBased, YScaleMixin, ExportMixin, FeatureDe
             o,
             [
                 { type: 'dijit/MenuSeparator' },
-                { label: 'Show labels',
-                  type: 'dijit/CheckedMenuItem',
-                  checked: !!( 'showLabels' in this ? this.showLabels : this.config.style.showLabels ),
-                  onClick: function(event) {
-                      track.showLabels = this.checked;
-                      track.changed();
-                  }
+                { label: 'Start New Thread',
+                    type: 'dijit/MenuItem',
+                    onClick: function() {
+                        var name = prompt("Enter title for thread");
+
+                        _this.updateComment({
+                            feature:this.feature,
+                            start:start,
+                            end:end,
+                            thread_id:thread_id,
+                            name: name,
+                            action:"insert"
+                        },function(thread_id) {
+                            startThread('http://jbrowse.org/v2/'+thread_id,thread_id,name);
+                            track.newFeats.push([0, start, end, "ctgA", thread_id, name]);
+                            track.redraw();
+                        });
+                    }
                 }
             ]
         );
+        for (var i = 0; i < o.length; i++) {
+            if (
+                o[i].label == "Edit config" ||
+                o[i].label == "About this track" ||
+                o[i].label == "Save track data"
+            ) {
+                delete o[i];
+            }
+        }
 
         return o;
     }
@@ -1103,7 +1127,8 @@ return CommentFeatures;
 
 Copyright (c) 2007-2010 The Evolutionary Software Foundation
 
-Created by Mitchell Skinner <mitch_skinner@berkeley.edu>
+CommentFeatures track is implemented by Pubudu Dodangoda <pubudu.dodan@gmail.com>
+based on HTMLFetaures track Created by Mitchell Skinner <mitch_skinner@berkeley.edu>
 
 This package and its accompanying libraries are free software; you can
 redistribute it and/or modify it under the terms of the LGPL (either
