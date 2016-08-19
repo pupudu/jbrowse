@@ -81,17 +81,28 @@ define( [
                 this._setupEventHandlers();
 
                 this.newFeats = [
-                    [0, 4500, 5500, "ctgA", "bf1", "my title"],
-                    [0, 4200, 4600, "ctgA", "bf2", "New dodan"]
                 ];
             },
 
             /**
-             * Returns object holding the default configuration for HTML-based feature tracks.
+             * Returns object holding the default configuration for comment track.
              * @private
              */
             _defaultConfig: function() {
                 var _this = this;
+                describeThreads2();
+                window.setInterval(function(){
+                    describeThreads(function(changes){
+                        var ids = Object.keys(changes);
+                        for (var i = 0; i < ids.length; i++) {
+                            var div = query('.feature.'+ids[i]);
+                            div.addClass('hasComments');
+                            if(div[0]){
+                                div[0].feature.set('class_css','hasComments');
+                            }
+                        }
+                    });
+                },3000);
                 return Util.deepUpdate(
                     lang.clone( this.inherited(arguments) ),
                     {
@@ -130,18 +141,20 @@ define( [
                                 reload(this.feature.get('thread_id'));
                                 $('#wrapper').removeClass('toggled');
                                 $('.sidebar-brand')[0].textContent = name;
+                                query('.feature.'+this.feature.get('thread_id')).removeClass('hasComments');
+                                this.feature.set('class_css','');
                             }
                         },
                         menuTemplate: [
-                            { label: 'Load Thread',
-                                action: function () {
-                                    var thread = this;
-                                    reload(this.feature.get('thread_id'));
-                                    $('#wrapper').removeClass('toggled');
-                                    this.track.redraw();
-                                },
-                                iconClass: 'dijitIconMail'
-                            },
+                            // { label: 'Load Thread',
+                            //     action: function () {
+                            //         var thread = this;
+                            //         reload(this.feature.get('thread_id'));
+                            //         $('#wrapper').removeClass('toggled');
+                            //         this.track.redraw();
+                            //     },
+                            //     iconClass: 'dijitIconMail'
+                            // },
                             { label: 'Delete Thread Link',
                                 action: function() {
                                     var thread = this;
@@ -149,9 +162,7 @@ define( [
                                         feature:this.feature,
                                         action:"remove"
                                     },function() {
-                                        thread.feature.set('start', 200000);
-                                        thread.feature.set('end', 200000);
-                                        thread.feature.set('name', '');
+                                        thread.feature.set('thread_id', 'hidden');
                                         thread.track.redraw();
                                     });
                                 },
@@ -192,29 +203,30 @@ define( [
                                     });
                                 },
                                 iconClass: 'dijitIconTask'
-                            },
-                            { label: 'Start new thread',
-                                action: function() {
-                                    var url = prompt("Enter a unique url to identify thread");
-                                    var thread_id = prompt("Enter a unique Id to identify thread");
-                                    var name = prompt("Enter title for thread");
-                                    var start = prompt("Enter starting point",500);
-                                    var end = prompt("Enter Ending point",1000);
-
-                                    startThread(url,thread_id,name);
-                                    _this.updateComment({
-                                        feature:this.feature,
-                                        start:start,
-                                        end:end,
-                                        thread_id:thread_id,
-                                        name: name,
-                                        action:"insert"
-                                    },function() {
-                                        this.track.redraw();
-                                    });
-                                },
-                                iconClass: 'dijitLeaf'
                             }
+                            // ,
+                            // { label: 'Start new thread',
+                            //     action: function() {
+                            //         var url = prompt("Enter a unique url to identify thread");
+                            //         var thread_id = prompt("Enter a unique Id to identify thread");
+                            //         var name = prompt("Enter title for thread");
+                            //         var start = prompt("Enter starting point",500);
+                            //         var end = prompt("Enter Ending point",1000);
+                            //
+                            //         startThread(url,thread_id,name);
+                            //         _this.updateComment({
+                            //             feature:this.feature,
+                            //             start:start,
+                            //             end:end,
+                            //             thread_id:thread_id,
+                            //             name: name,
+                            //             action:"insert"
+                            //         },function() {
+                            //             this.track.redraw();
+                            //         });
+                            //     },
+                            //     iconClass: 'dijitLeaf'
+                            // }
                         ]
                     });
             },
@@ -475,7 +487,8 @@ define( [
                             "End",
                             "Seq_id",
                             "thread_id",
-                            "name"
+                            "name",
+                            "class_css"
                         ]
                     }
                 ]);
@@ -745,10 +758,12 @@ define( [
                 }
 
                 var thread_id = feature.get('thread_id');
+                var class_css = feature.get('class_css');
 
                 dojo.addClass(featDiv, "feature");
                 dojo.addClass(featDiv, "comment");
                 dojo.addClass(featDiv, thread_id);
+                dojo.addClass(featDiv, class_css);
                 var className = this.config.style.className;
                 if (className == "{type}") { className = feature.get('type'); }
                 var strand = feature.get('strand');
@@ -828,7 +843,8 @@ define( [
                     var labelDiv = dojo.create( 'div', {
                         className: "feature-label" + ( highlighted ? ' highlighted' : '' ),
                         innerHTML:  ( name ? '<div class='+classes+'>'+name+'</div>' : '' )
-                        +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
+                        +( description ? ' <div class="feature-description">'+description+'</div>' : '' )
+                        +('<span class="disqus-comment-count" data-disqus-identifier='+thread_id+'>'+''+'</span>'),
                         style: {
                             top: (top + this.glyphHeight + 2) + "px",
                             left: (100 * (layoutStart - block.startBase) / blockWidth)+'%'
@@ -1092,31 +1108,28 @@ define( [
                 var o = this.inherited(arguments);
                 var track = this;
 
-                o.push.apply(
-                    o,
-                    [
-                        { type: 'dijit/MenuSeparator' },
-                        { label: 'Start New Thread',
-                            type: 'dijit/MenuItem',
-                            onClick: function() {
-                                var name = prompt("Enter title for thread");
-                                var start = prompt("Enter start position");
-                                var end = prompt("Enter End position");
-                                track.updateComment({
-                                    start:start,
-                                    end:end,
-                                    name: name,
-                                    action:"insert"
-                                },function(res) {
-                                    var thread_id = res.id;
-                                    startThread('http://jbrowse.org/v2/'+thread_id,thread_id,name);
-                                    track.newFeats.push([0, start, end, "ctgA", thread_id, name]);
-                                    track.redraw();
-                                });
-                            }
-                        }
-                    ]
-                );
+                o.push.apply(o, [{
+                    type: 'dijit/MenuSeparator'
+                }, {
+                    label: 'Start New Thread',
+                    type: 'dijit/MenuItem',
+                    onClick: function () {
+                        var name = prompt("Enter title for thread");
+                        var start = prompt("Enter start position");
+                        var end = prompt("Enter End position");
+                        track.updateComment({
+                            start: start,
+                            end: end,
+                            name: name,
+                            action: "insert"
+                        }, function (res) {
+                            var thread_id = res.id;
+                            startThread('http://jbrowse.org/v2/' + thread_id, thread_id, name);
+                            track.newFeats.push([0, start, end, "ctgA", thread_id, name]);
+                            track.redraw();
+                        });
+                    }
+                }]);
                 for (var i = 0; i < o.length; i++) {
                     if (
                         o[i].label == "Edit config" ||
