@@ -90,7 +90,7 @@ define( [
              */
             _defaultConfig: function() {
                 var _this = this;
-                describeThreads2();
+                describeThreads();
                 window.setInterval(function(){
                     describeThreads(function(changes){
                         var ids = Object.keys(changes);
