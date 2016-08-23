@@ -213,7 +213,7 @@ define([
                     var oldFeature = [0, start_o, end_o, seq_id_o, thread_id_o, name_o];
                 }
                 var newFeature = [0, args.start || start_o, args.end || end_o, "ctgA", args.thread_id || thread_id_o || 'tempId', args.name || name_o];
-                xhr("/updateThread", {
+                xhr("http://localhost:3000/updateThread", {
                     handleAs: "json",
                     method: 'POST',
                     data: {
