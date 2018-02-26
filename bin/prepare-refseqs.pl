@@ -20,7 +20,9 @@ prepare-refseqs.pl - format reference sequences for use by JBrowse
    # OR:
        prepare-refseqs.pl --fasta <file1> --fasta <file2>  [options]
    # OR:
-       prepare-refseqs.pl --indexed_fasta <file1>  [options]
+       prepare-refseqs.pl --indexed_fasta <file>  [options]
+   # OR:
+       prepare-refseqs.pl --twobit <file>  [options]
    # OR:
        prepare-refseqs.pl --conf <JBrowse config file>  [options]
    # OR:
@@ -113,6 +115,12 @@ The displayed name of the sequence track, defaults to 'Reference sequence'.
 
 The Name of the alphabet used for these reference sequences, usually
 either 'dna', 'rna', or 'protein'.
+
+=item --trackConfig '{ JSON-format extra configuration for this track }'
+
+Additional top-level configuration for the client, in JSON syntax.  Example:
+
+  --trackConfig '{ "glyph": "ProcessedTranscript" }'
 
 =back
 

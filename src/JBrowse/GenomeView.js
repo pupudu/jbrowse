@@ -59,15 +59,18 @@ var locationThumbMover = declare( dndMove.constrainedMoveable, {
 return declare( [Component,FeatureFiltererMixin], {
 
 constructor: function( args ) {
+    console.log(">>> view constructor");
     var browser = args.browser;
     var elem = args.elem;
     var stripeWidth = args.stripeWidth;
     var refseq = args.refSeq;
     var zoomLevel = args.zoomLevel;
-
+    this.desiredTracks = {};
     // keep a reference to the main browser object
     this.browser = browser;
     this.setFeatureFilterParentComponent( this.browser );
+
+    this.focusTrack = null;
 
     //the page element that the GenomeView lives in
     this.elem = elem;
@@ -76,6 +79,12 @@ constructor: function( args ) {
     // Add an arbitrary 50% padding between the position labels and the
     // topmost track
     this.topSpace = this.posHeight*1.5;
+
+    // handle trackLabels option
+    if (typeof browser.config.trackLabels !== 'undefined' && browser.config.trackLabels === "no-block") {
+        this.config.trackPadding = 35;
+        this.topSpace = this.posHeight*3;
+    }
 
     // WebApollo needs max zoom level to be sequence residues char width
     this.maxPxPerBp = this.config.maxPxPerBp;
@@ -423,6 +432,8 @@ _behaviors: function() { return {
             handles.push(
                 dojo.connect( this.scrollContainer,     wheelevent,     this, 'wheelScroll', false ),
 
+                dojo.connect( this.verticalScrollBar.container,     'onclick',     this, 'scrollBarClickScroll', false ),
+
                 dojo.connect( this.scaleTrackDiv,       "mousedown",
                               dojo.hitch( this, 'startRubberZoom',
                                           dojo.hitch( this,'absXtoBp'),
@@ -611,6 +622,39 @@ calculatePositionLabelHeight: function( containerElement ) {
     containerElement.removeChild(heightTest);
     return h;
 },
+
+scrollBarClickScroll : function( event ) {
+
+    if ( !event )
+        event = window.event;
+
+    var containerHeight = parseInt( this.verticalScrollBar.container.style.height,10 );
+    var markerHeight = parseInt( this.verticalScrollBar.positionMarker.style.height,10 );
+    var trackContainerHeight = this.trackContainer.clientHeight;
+    var absY = this.getY()*( trackContainerHeight/containerHeight );
+    if ( absY > event.clientY )
+      this.setY( this.getY() - 300 );
+    else if (absY + markerHeight < event.clientY)
+      this.setY( this.getY() + 300 );
+
+    //the timeout is so that we don't have to run showVisibleBlocks
+    //for every scroll wheel click (we just wait until so many ms
+    //after the last one).
+
+    if ( this.wheelScrollTimeout )
+        window.clearTimeout( this.wheelScrollTimeout );
+
+    // 100 milliseconds since the last scroll event is an arbitrary
+    // cutoff for deciding when the user is done scrolling
+    // (set by a bit of experimentation)
+    this.wheelScrollTimeout = window.setTimeout( dojo.hitch( this, function() {
+        this.showVisibleBlocks(true);
+        this.wheelScrollTimeout = null;
+    }, 100));
+
+    dojo.stopEvent(event);
+},
+
 
 wheelScroll: function( event ) {
 
@@ -1070,6 +1114,7 @@ setLocation: function(refseq, startbp, endbp) {
         endbp = refseq.end;
 
     function removeTrack( track ) {
+        delete thisB.desiredTracks[track.name];
         if (track.div && track.div.parentNode)
             track.div.parentNode.removeChild(track.div);
     };
@@ -2037,9 +2082,10 @@ showVisibleBlocks: function(updateHeight, pos, startX, endX) {
 showTracks: function( trackConfigs ) {
     // filter out any track configs that are already displayed
     var needed = dojo.filter( trackConfigs, function(conf) {
-        return this._getTracks( [conf.label] ).length == 0;
+        return this._getTracks( [conf.label] ).length == 0 && !this.desiredTracks[conf.label];
     },this);
     if( ! needed.length ) return;
+    array.forEach(trackConfigs, function(ret) { this.desiredTracks[ret.label] = true; }, this);
 
     // insert the track configs into the trackDndWidget ( the widget
     // will call create() on the confs to render them)
@@ -2102,6 +2148,7 @@ hideTracks: function( /**Array[String]*/ trackConfigs ) {
         return this._getTracks( [conf.label] ).length != 0;
     },this);
     if( ! displayed.length ) return;
+    array.forEach(trackConfigs, function(ret) { delete this.desiredTracks[ret.label]; }, this);
 
     // remove the track configs from the trackDndWidget ( the widget
     // will call create() on the confs to render them )
@@ -2204,7 +2251,17 @@ renderTrack: function( /**Object*/ trackConfig ) {
     var trackClass, store;
 
     var makeTrack = dojo.hitch(this, function() {
+
+        // if there is no key for this track in its configuration, attempt to load the key from the track metadata
+        var metadataKey;
+        try {
+            metadataKey = this.browser.trackMetaDataStore.getItem(trackConfig.label).key
+        } catch(e) {}
+
+        // create the track
+
         var track = new trackClass({
+                key: trackConfig.key || metadataKey,
                 refSeq: this.ref,
                 config: trackConfig,
                 changeCallback: dojo.hitch( this, 'showVisibleBlocks', true ),
@@ -2216,6 +2273,12 @@ renderTrack: function( /**Object*/ trackConfig ) {
             store.setTrack( track );
 
         trackDiv.track = track;
+
+        // track focus handler
+        dojo.connect(trackDiv, "onclick", function(evt){
+            thisB.setTrackFocus(track,1);
+        });
+
 
         var heightUpdate = dojo.hitch( this, 'trackHeightUpdate', trackName );
         track.setViewInfo( this, heightUpdate, this.stripeCount, trackDiv,
@@ -2249,12 +2312,47 @@ renderTrack: function( /**Object*/ trackConfig ) {
 
     // get the track class
     require( [ trackConfig.type ], function( class_ ) {
+        if(typeof class_ === "string") {
+            console.error("Failed to load module: "+trackConfig.type);
+            return;
+        }
         trackClass = class_;
         if( trackClass && store )
             makeTrack();
     });
 
     return trackDiv;
+},
+/**
+ * 
+ * @param {type} track
+ * @param {type} state
+ * @returns {undefined}
+ */
+setTrackFocus: function(track,state) {
+    var thisB = this;
+    
+    if (state === 1) {
+        if (this.focusTrack !== null) {
+
+            // if already in focus, don't do anything
+            if (this.focusTrack == track)  return;
+
+            thisB.browser.publish( '/jbrowse/v1/n/tracks/unfocus', this.focusTrack );
+            this.focusTrack = null;
+        }
+        thisB.focusTrack = track;
+        thisB.browser.publish( '/jbrowse/v1/n/tracks/focus', track );
+    }
+    if (state === 0) {
+        // if already in focus, don't do anything
+        if (this.focusTrack === null) {
+            console.log("no track in focus");
+            return;
+        }
+        thisB.browser.publish( '/jbrowse/v1/n/tracks/unfocus', this.focusTrack );
+        this.focusTrack = null;
+    }
 },
 
 trackIterate: function(callback) {

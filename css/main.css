@@ -249,6 +249,7 @@ div.locationTrap {
     border-style: solid;
     border-bottom-color: #A9C6EB;
     border-top: 0px dotted transparent;
+    box-sizing: content-box;
 }
 
 div.locationThumb {
@@ -1077,3 +1078,17 @@ table.baseQuality td {
     display: block;
     text-align: center;
 }
+
+.about-dialog .loaded-plugins {
+    text-align: left;
+}
+
+.about-dialog .loaded-plugins li {
+    margin: 0em;
+}
+
+.about-dialog .plugins-list {
+    max-height: 100px;
+    overflow: auto;
+}
+

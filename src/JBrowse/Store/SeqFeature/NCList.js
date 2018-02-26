@@ -82,8 +82,13 @@ return declare( SeqFeatureStore,
 
             // fetch the trackdata
             var thisB = this;
-            console.log(url);
-            xhr.get( url, { handleAs: 'json', failOk: true })
+            xhr.get( url, {
+                handleAs: 'json',
+                failOk: true,
+                headers: {
+                    'X-Requested-With': null
+                }
+            })
                .then( function( trackInfo, request ) {
                           //trackInfo = JSON.parse( trackInfo );
                           thisB._handleTrackInfo( refData, trackInfo, url );

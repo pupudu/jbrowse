@@ -90,15 +90,20 @@ return declare( null, {
                     options: [
                         { label: '<span class="ghosted">file type?</span>', value: null     },
                         { label: "GFF3",        value: "gff3"   },
-                        { label: "GFF3+bgzip",  value: "gff3.gz"},
                         { label: "GTF",         value: "gtf"    },
                         { label: "BigWig",      value: "bigwig" },
                         { label: "BAM",         value: "bam"    },
-                        { label: "BAM index",   value: "bai"    },
+                        { label: "BAM index",   value: "bam.bai"},
                         { label: "FASTA",       value: "fasta"  },
+                        { label: "2bit",        value: "2bit"   },
                         { label: "FASTA index", value: "fai"    },
                         { label: "VCF+bgzip",   value: "vcf.gz" },
-                        { label: "Tabix index", value: "tbi"    }
+                        { label: "BED+bgzip",   value: "bed.gz" },
+                        { label: "BED",         value: "bed"    },
+                        { label: "GFF3+bgzip",  value: "gff3.gz"},
+                        { label: "Tabix index", value: "vcf.gz.tbi" },
+                        { label: "Tabix index", value: "gff3.gz.tbi" },
+                        { label: "Tabix index", value: "bed.gz.tbi" }
                     ],
                     value: this.guessType( name ),
                     onChange: function() {
@@ -147,15 +152,20 @@ return declare( null, {
     guessType: function( name ) {
         return ( this._rememberedTypes||{} )[name] || (
                 /\.bam$/i.test( name )          ? 'bam'    :
-                /\.bai$/i.test( name )          ? 'bai'    :
+                /\.bam.bai$/i.test( name )      ? 'bam.bai'    :
                 /\.gff3?$/i.test( name )        ? 'gff3'   :
                 /\.gtf?$/i.test( name )         ? 'gtf'    :
                 /\.(bw|bigwig)$/i.test( name )  ? 'bigwig' :
                 /\.(fa|fasta)$/i.test( name )   ? 'fasta'  :
+                /\.2bit$/i.test( name )         ? '2bit'   :
                 /\.fai$/i.test( name )          ? 'fai'    :
                 /\.vcf\.gz$/i.test( name )      ? 'vcf.gz' :
-                /\.tbi$/i.test( name )          ? 'tbi'    :
+                /\.bed\.gz$/i.test( name )      ? 'bed.gz' :
+                /\.bed$/i.test( name )          ? 'bed'    :
                 /\.gff3?\.gz$/i.test( name )    ? 'gff3.gz':
+                /\.gff3?\.gz.tbi$/i.test( name )? 'gff3.gz.tbi' :
+                /\.vcf.gz.tbi$/i.test( name )   ? 'vcf.gz.tbi'  :
+                /\.bed.gz.tbi$/i.test( name )   ? 'bed.gz.tbi'  :
                                                   null
         );
     }

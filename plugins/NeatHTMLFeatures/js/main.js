@@ -118,9 +118,28 @@ return declare( JBrowsePlugin,
                 if (attr.indexOf("splice-site") === -1)
                     subNodes.push(subNodesX[i]);
             }
-            
-            if (subNodes.length) {
-            
+            if(subNodes.length<2){
+                // apply introns to all feature tracks
+                var subFeatureIntron = query('div.feature-render',featureNode);
+                // added to handle apollo annotation classes:  https://github.com/GMOD/Apollo/issues/1417
+                if(subFeatureIntron && subFeatureIntron.length==1 && subFeatureIntron[0].className.indexOf("annot-apollo")<0 && subFeatureIntron[0].className.indexOf("annot-render")<0){
+                    var left = featureNode.style.left;
+                    var width = featureNode.style.width;
+                    var height = '100%';
+                    var str = "";
+                    str += "<svg class='jb-intron' viewBox='0 0 100 100' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' ";
+                    str += "style='position:absolute;z-index: 15;";  // this must be here and not in CSS file
+                    str += "left: " + left + ";width: " + width + ";height: " + height + "'>";
+                    str += "<polyline points='0,50 100,50' style='fill:none;stroke:black;stroke-width:5' shape-rendering='optimizeQuality' />";
+                    str += "</svg>";
+
+                    // note: dojo.create("svg") does not render due to namespace issue between DOM and SVG
+                    domConstruct.place(str, featureNode);
+                    ++intronCount;
+                }
+            }
+            else
+            if (subNodes.length>=2) {
                 // identify directionality
                 var classAttr = dojo.attr(featureNode, "class");
                 var direction = 1;
@@ -136,15 +155,8 @@ return declare( JBrowsePlugin,
                 }
                 // sort the subfeatures
                 if (subNodes.length >= 2) {
-                    subNodes.sort(function(a, b){ return a.left - b.left; });    
+                    subNodes.sort(function(a, b){ return a.left - b.left; });
                 }
-
-                /* debug display subfeature list
-                console.dir(subNodes);
-                for(var i=0; i < subNodes.length;i++) {
-                    console.log(i + " subfeature left,width: "+subNodes[i].left+", "+subNodes[i].width);
-                }
-                */
 
                 // insert introns between subfeature gaps
                 for(var i=0; i< subNodes.length-1;++i) {
@@ -170,7 +182,7 @@ return declare( JBrowsePlugin,
                         str += "<svg class='jb-intron' viewBox='0 0 100 100' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' ";
                         str += "style='position:absolute;z-index: 15;";  // this must be here and not in CSS file
                         str += "left: "+left+"px;width: "+width+"px;height: "+height+"'>";
-                        str += "<polyline points='0,50 "+ dir +" 100,50' style='fill:none;stroke:black;stroke-width:5' shape-rendering='optimizeQuality' />";
+                        str += "<polyline class='neat-intron' points='0,50 "+ dir +" 100,50' shape-rendering='optimizeQuality' />";
                         str += "</svg>";
 
                         // note: dojo.create("svg") does not render due to namespace issue between DOM and SVG

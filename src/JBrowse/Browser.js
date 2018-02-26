@@ -1,5 +1,3 @@
-var _gaq = _gaq || []; // global task queue for Google Analytics
-
 define( [
             'dojo/_base/declare',
             'dojo/_base/lang',
@@ -42,6 +40,7 @@ define( [
             'JBrowse/View/FastaFileDialog',
             'JBrowse/Store/SeqFeature/IndexedFasta',
             'JBrowse/Store/SeqFeature/UnindexedFasta',
+            'JBrowse/Store/SeqFeature/TwoBit',
             'JBrowse/Model/Location',
             'JBrowse/View/LocationChoiceDialog',
             'JBrowse/View/Dialog/SetHighlight',
@@ -52,6 +51,7 @@ define( [
             'JBrowse/View/StandaloneDatasetList',
             'dijit/focus',
             'lazyload', // for dynamic CSS loading
+            'dojo/text!./package.json',
             'dojo/domReady!'
         ],
         function(
@@ -96,6 +96,7 @@ define( [
             FastaFileDialog,
             IndexedFasta,
             UnindexedFasta,
+            TwoBit,
             Location,
             LocationChoiceDialog,
             SetHighlightDialog,
@@ -105,7 +106,8 @@ define( [
             HelpDialog,
             StandaloneDatasetList,
             dijitFocus,
-            LazyLoad
+            LazyLoad,
+            packagejson
         ) {
 
 
@@ -142,10 +144,15 @@ constructor: function(params) {
     if( this.config.unitTestMode )
         return;
 
+    // hook for externally applied initialization that can be setup in index.html
+    if (typeof this.config.initExtra === 'function')
+       	this.config.initExtra(this,params);
+
     this.startTime = new Date();
 
     // start the initialization process
     var thisB = this;
+
     dojo.addOnLoad( function() {
         thisB.loadConfig().then( function() {
 
@@ -156,8 +163,8 @@ constructor: function(params) {
             if( thisB.config.initialHighlight && thisB.config.initialHighlight != "/" )
                 thisB.setHighlight( new Location( thisB.config.initialHighlight ) );
 
-            thisB.loadNames();
             thisB.initPlugins().then( function() {
+                thisB.loadNames();
                 thisB.loadUserCSS().then( function() {
 
                     thisB.initTrackMetadata();
@@ -184,7 +191,14 @@ constructor: function(params) {
                            //    if no URL param and no tracks cookie, then use defaultTracks
                            if (thisB.config.forceTracks)   { tracksToShow = tracksToShow.concat(thisB.config.forceTracks.split(",")); }
                            else if (thisB.cookie("tracks")) { tracksToShow = tracksToShow.concat(thisB.cookie("tracks").split(",")); }
-                           else if (thisB.config.defaultTracks) { tracksToShow = tracksToShow.concat(thisB.config.defaultTracks.split(",")); }
+                           else if (thisB.config.defaultTracks) {
+                               // In rare cases thisB.config.defaultTracks already contained an array that appeared to
+                               // have been split in a previous invocation of this function. Thus, we only try and split
+                               // it if it isn't already split.
+                               if (!(thisB.config.defaultTracks instanceof Array)) {
+                                  tracksToShow = tracksToShow.concat(thisB.config.defaultTracks.split(","));
+                               }
+                           }
                            // currently, force "DNA" _only_ if no other guides as to what to show?
                            //    or should this be changed to always force DNA to show?
                            if (tracksToShow.length == 0) { tracksToShow.push("DNA"); }
@@ -222,8 +236,7 @@ _initialLocation: function() {
 version: function() {
     // when a build is put together, the build system assigns a string
     // to the variable below.
-    var BUILD_SYSTEM_JBROWSE_VERSION;
-    return BUILD_SYSTEM_JBROWSE_VERSION || 'development';
+    return JSON.parse(packagejson).version;
 }.call(),
 
 
@@ -260,7 +273,7 @@ initPlugins: function() {
             plugins = function() {
                 var newplugins = [];
                 for( var pname in plugins ) {
-                    if( !( 'name' in plugins[pname] ) ) {
+                    if( lang.isObject(plugins[pname]) && !( 'name' in plugins[pname] ) ) {
                         plugins[pname].name = pname;
                     }
                     newplugins.push( plugins[pname] );
@@ -516,7 +529,12 @@ loadRefSeqs: function() {
             this.addRefseqs( this.config.refSeqs.data );
             deferred.resolve({success:true});
         } else {
-            request(this.config.refSeqs.url, { handleAs: 'text' } )
+            request(this.config.refSeqs.url, {
+                handleAs: 'text',
+                headers: {
+                    'X-Requested-With': null
+                }
+            } )
                 .then( function(o) {
                            thisB.addRefseqs( dojo.fromJson(o) );
                            deferred.resolve({success:true});
@@ -903,8 +921,10 @@ initView: function() {
             var snapLink = this.makeSnapLink();
             if(snapLink) { menuBar.appendChild( snapLink ); }
         }
-        else
-            menuBar.appendChild( this.makeFullViewLink() );
+        else {
+            if ( this.config.show_fullviewlink )
+                menuBar.appendChild( this.makeFullViewLink() );
+        }
 
 
         this.viewElem = document.createElement("div");
@@ -943,7 +963,8 @@ initView: function() {
             var shareURL = thisObj.makeCurrentViewURL();
             if( thisObj.config.updateBrowserURL && window.history && window.history.replaceState )
                 window.history.replaceState( {},"", shareURL );
-            document.title = thisObj.browserMeta().title + ' ' + thisObj.view.visibleRegionLocString();
+            if (thisObj.config.update_browser_title)
+                document.title = thisObj.browserMeta().title + ' ' + thisObj.view.visibleRegionLocString();
         };
         dojo.connect( this, "onCoarseMove",                     updateLocationBar );
         this.subscribe( '/jbrowse/v1/n/tracks/visibleChanged',  updateLocationBar );
@@ -1207,6 +1228,36 @@ openFastaElectron: function() {
                     window.location = window.location.href.split('?')[0] + "?data=" + Util.replacePath( dir );
                 } catch(e) { alert(e); }
             }
+            else if( confs[0].store.blob ) {
+                var f2bit = Util.replacePath( confs[0].store.blob.url );
+
+                var refseqs = new TwoBit({'browser': this, 'urlTemplate': f2bit });
+                var thisB = this;
+                refseqs.getRefSeqs( function(res) {
+                    var trackList = {
+                        tracks: [{
+                            label: confs[0].label,
+                            key: confs[0].key,
+                            type: "SequenceTrack",
+                            category: "Reference sequence",
+                            useAsRefSeqStore: true,
+                            storeClass: 'JBrowse/Store/SeqFeature/TwoBit',
+                            chunkSize: 20000,
+                            urlTemplate: f2bit
+                        }],
+                        refSeqs: { data: res },
+                        refSeqOrder: results.refSeqOrder
+                    };
+                    try {
+                        var dir = app.getPath('userData')+"/"+confs[0].label;
+                        fs.existsSync(dir) || fs.mkdirSync(dir);
+                        fs.writeFileSync(dir + "/trackList.json", JSON.stringify(trackList, null, 2));
+                        fs.closeSync(fs.openSync( dir+"/tracks.conf", 'w' ));
+                        thisB.saveSessionDir( dir );
+                        window.location = window.location.href.split('?')[0] + "?data=" + Util.replacePath( dir );
+                    } catch(e) { alert(e); }
+                }, function(err) { console.error('error', err); });
+            }
             else {
                 var fasta = Util.replacePath( confs[0].store.fasta.url );
                 try {
@@ -1293,6 +1344,16 @@ openFasta: function() {
                     function(error) { alert('Error getting refSeq: '+error); }
                 );
             }
+            else if( confs[0].store.blob ) {
+                new TwoBit({
+                    browser: this,
+                    blob: confs[0].store.blob
+                })
+                .getRefSeqs(
+                    function(refSeqs) { loadNewRefSeq( refSeqs, confs ); },
+                    function(error) { alert('Error getting refSeq: '+error); }
+                );
+            }
             else if( confs[0].store.fasta ) {
                 if( confs[0].store.fasta.size > 100000000 ) {
                    if(!confirm('Warning: you are opening a non-indexed fasta larger than 100MB. It is recommended to load a fasta (.fa) and the fasta index (.fai) to provide speedier loading. Do you wish to continue anyways?')) {
@@ -1322,8 +1383,7 @@ browserMeta: function() {
     var about = this.config.aboutThisBrowser || {};
     about.title = about.title || 'JBrowse';
 
-    var verstring = this.version && this.version.match(/^\d/)
-        ? this.version : '(development version)';
+    var verstring = this.version;
 
     if( about.description ) {
         about.description += '<div class="powered_by">'
@@ -1337,7 +1397,15 @@ browserMeta: function() {
             + '  <div class="tagline">A next-generation genome browser<br> built with JavaScript and HTML5.</div>'
             + '  <a class="mainsite" target="_blank" href="http://jbrowse.org">JBrowse website</a>'
             + '  <div class="gmod">JBrowse is a <a target="_blank" href="http://gmod.org">GMOD</a> project.</div>'
-            + '  <div class="copyright">&copy; 2013 The Evolutionary Software Foundation</div>'
+            + '  <div class="copyright">'+JSON.parse(packagejson).copyright+'</div>'
+            + ((Object.keys(this.plugins).length>1&&!this.config.noPluginsForAboutBox) ? (
+                '  <div class="loaded-plugins">Loaded plugins<ul class="plugins-list">'
+                + array.map(Object.keys(this.plugins), function(elt) {
+                    var p = this.plugins[elt];
+                    return '<li>'+
+                        (p.url ? '<a href="'+p.url+'">': '') + p.name + (p.url ? '</a>':'') +
+                        (p.author ? ' ('+p.author+')' : '')+'</li>'; }, this).join('')
+                + '  </ul></div>' ) : '')
             + '</div>';
     }
     return about;
@@ -1389,12 +1457,15 @@ getTrackTypes: function() {
                 'JBrowse/Store/SeqFeature/NCList'      : 'JBrowse/View/Track/CanvasFeatures',
                 'JBrowse/Store/SeqFeature/BigWig'      : 'JBrowse/View/Track/Wiggle/XYPlot',
                 'JBrowse/Store/SeqFeature/VCFTabix'    : 'JBrowse/View/Track/CanvasVariants',
-                'JBrowse/Store/SeqFeature/GFF3Tabix'   : 'JBrowse/View/Track/CanvasFeatures',
                 'JBrowse/Store/SeqFeature/GFF3'        : 'JBrowse/View/Track/CanvasFeatures',
+                'JBrowse/Store/SeqFeature/GFF3Tabix'   : 'JBrowse/View/Track/CanvasFeatures',
+                'JBrowse/Store/SeqFeature/BED'         : 'JBrowse/View/Track/CanvasFeatures',
+                'JBrowse/Store/SeqFeature/BEDTabix'    : 'JBrowse/View/Track/CanvasFeatures',
                 'JBrowse/Store/SeqFeature/GTF'         : 'JBrowse/View/Track/CanvasFeatures',
                 'JBrowse/Store/SeqFeature/StaticChunked' : 'JBrowse/View/Track/Sequence',
                 'JBrowse/Store/SeqFeature/UnindexedFasta': 'JBrowse/View/Track/Sequence',
-                'JBrowse/Store/SeqFeature/IndexedFasta'  : 'JBrowse/View/Track/Sequence'
+                'JBrowse/Store/SeqFeature/IndexedFasta'  : 'JBrowse/View/Track/Sequence',
+                'JBrowse/Store/SeqFeature/TwoBit'        : 'JBrowse/View/Track/Sequence'
             },
 
             knownTrackTypes: [
@@ -1601,25 +1672,60 @@ reportUsageStats: function() {
 
 // phones home to google analytics
 _reportGoogleUsageStats: function( stats ) {
-    _gaq.push.apply( _gaq, [
-        ['_setAccount', 'UA-7115575-2'],
-        ['_setDomainName', 'none'],
-        ['_setAllowLinker', true],
-        ['_setCustomVar', 1, 'tracks-count', stats['tracks-count'], 3 ],
-        ['_setCustomVar', 2, 'refSeqs-count', stats['refSeqs-count'], 3 ],
-        ['_setCustomVar', 3, 'refSeqs-avgLen', stats['refSeqs-avgLen'], 3 ],
-        ['_setCustomVar', 4, 'jbrowse-version', stats['ver'], 3 ],
-        ['_setCustomVar', 5, 'loadTime', stats['loadTime'], 3 ],
-        ['_trackPageview']
-    ]);
+    var thisB = this;
+    // jbrowse.org account always
+    var jbrowseUser = 'UA-7115575-2'
+    var accounts = [ jbrowseUser ];
 
-    var ga = document.createElement('script');
-    ga.type = 'text/javascript';
-    ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www')
-             + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(ga, s);
+    // add any custom Google Analytics accounts from config (comma-separated or array)
+    if( this.config.googleAnalytics ) {
+        var userAccounts = this.config.googleAnalytics.accounts;
+        if( accounts && ! lang.isArray(userAccounts) ) {
+            userAccounts = userAccounts.replace(/^\s*|\s*$/,'').split(/\s*,\s*/)
+        }
+        accounts.push.apply( accounts, userAccounts );
+    }
+
+    var analyticsScript = "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ ";
+    analyticsScript += "(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), ";
+    analyticsScript += "m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) ";
+    analyticsScript += "})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');";
+
+    // set up users
+    accounts.forEach(function(user,trackerNum) {
+        // if we're adding jbrowse.org user, also include new dimension references (replacing ga.js custom variables)
+        if ( user == jbrowseUser) {
+            analyticsScript += "ga('create', '"+user+"', 'auto', 'jbrowseTracker');";
+        }
+        else {
+            analyticsScript += "ga('create', '"+user+"', 'auto', 'customTracker"+trackerNum+"');";
+        }
+    });
+
+    // send pageviews and custom variables
+    accounts.forEach(function(user,viewerNum) {
+        if ( user == jbrowseUser) {
+            var gaData = {};
+            var googleDimensions = 'tracks-count refSeqs-count refSeqs-avgLen ver loadTime electron plugins';
+            var googleMetrics = 'loadTime';
+
+            googleDimensions.split(/\s+/).forEach( function(key,index) {
+                gaData['dimension'+(index+1)] = stats[key];
+            });
+
+            gaData.metric1 = Math.round(stats.loadTime*1000);
+
+            analyticsScript += "ga('jbrowseTracker.send', 'pageview',"+JSON.stringify(gaData)+");";
+        }
+        else {
+            analyticsScript += "ga('customTracker"+viewerNum+".send', 'pageview');";
+        }
+    });
+
+    var analyticsScriptNode = document.createElement('script');
+    analyticsScriptNode.innerHTML = analyticsScript;
+
+    document.getElementsByTagName('head')[0].appendChild(analyticsScriptNode);
 },
 
 // phones home to custom analytics at jbrowse.org
@@ -1688,11 +1794,19 @@ getStore: function( storeName, callback ) {
                              });
 
                  var store = new storeClass( storeArgs );
-                 this._storeCache[ storeName ] = { refCount: 1, store: store };
+
+                 var cache = typeof storeArgs.storeCache==='undefined' || storeArgs.storeCache !== false;
+
+                 if (cache)
+                    this._storeCache[ storeName ] = { refCount: 1, store: store };
+
                  callback( store );
                  // release the callback because apparently require
                  // doesn't release this function
                  callback = undefined;
+
+                 //if (cache)
+                 //    delete store;
              }));
 },
 
@@ -1945,7 +2059,7 @@ loadConfig: function () {
                                this._addTrackConfigs( tracks );
 
                                // coerce some config keys to boolean
-                               dojo.forEach( ['show_tracklist','show_nav','show_overview','show_menu', 'show_tracklabels'], function(v) {
+                               dojo.forEach( ['show_tracklist','show_nav','show_overview','show_menu', 'show_fullviewlink', 'show_tracklabels', 'update_browser_title'], function(v) {
                                                  this.config[v] = this._coerceBoolean( this.config[v] );
                                              },this);
 
@@ -2035,6 +2149,8 @@ _configDefaults: function() {
         show_nav: true,
         show_menu: true,
         show_overview: true,
+        show_fullviewlink: true,
+        update_browser_title: true,
 
         refSeqs: "{dataRoot}/seq/refSeqs.json",
         include: [
@@ -2287,43 +2403,38 @@ navigateTo: function(loc) {
     this.afterMilestone( 'initView', function() {
         // lastly, try to search our feature names for it
         thisB.searchNames( loc )
-            .then( function( found ) {
-                if( found )
-                    return;
+           .then( function( found ) {
+                      if( found )
+                          return;
 
-                // if it's a foo:123..456 location, go there
-                if(!thisB.callLocation(loc)){return;}
+                      // if it's a foo:123..456 location, go there
+                      var location = typeof loc == 'string' ? Util.parseLocString( loc ) :  loc;
+                      // only call navigateToLocation() directly if location has start and end, otherwise try and fill in start/end from 'location' cookie
+                      if( location && ("start" in location) && ("end" in location)) {
+                          thisB.navigateToLocation( location );
+                          return;
+                      }
+                      // otherwise, if it's just a word (or a location with only a ref property), try to figure out what it is
+                      else {
+                          if( typeof loc != 'string')
+                              loc = loc.ref;
 
-                new InfoDialog(
-                {
-                    title: 'Not found',
-                    content: 'Not found: <span class="locString">'+loc+'</span>',
-                    className: 'notfound-dialog'
-                }).show();
-            },
-            thisB.callLocation(loc));
+                          // is it just the name of one of our ref seqs?
+                          var ref = thisB.findReferenceSequence( loc );
+                          if( ref ) {
+                              thisB.navigateToLocation( { ref: ref.name } );
+                              return;
+                          }
+                      }
+
+                      new InfoDialog(
+                          {
+                              title: 'Not found',
+                              content: 'Not found: <span class="locString">'+loc+'</span>',
+                              className: 'notfound-dialog'
+                          }).show();
+                  });
     });
-},
-
-callLocation: function(loc){
-    var thisB=this;
-    var location = typeof loc == 'string' ? Util.parseLocString( loc ) :  loc;
-    // only call navigateToLocation() directly if location has start and end, otherwise try and fill in start/end from 'location' cookie
-    if( location && ("start" in location) && ("end" in location)) {
-        thisB.navigateToLocation( location );
-        return false;
-    }
-    // otherwise, if it's just a word (or a location with only a ref property), try to figure out what it is
-    else {
-        if( typeof loc != 'string')
-            loc = loc.ref;
-        // is it just the name of one of our ref seqs?
-        var ref = thisB.findReferenceSequence( loc );
-        if( ref ) {
-            thisB.navigateToLocation( { ref: ref.name } );
-            return false;
-        }
-    }
 },
 
 findReferenceSequence: function( name ) {
@@ -3147,7 +3258,7 @@ getHighlight: function() {
 
 getBookmarks: function() {
     if( this.config.bookmarkService ) {
-        return request( this.config.bookmarkService + "?"+ioQuery.objectToQuery({sequence: this.refSeq.name}), {
+        return request( this.config.bookmarkService + "?" + ioQuery.objectToQuery({ sequence: this.refSeq.name, organism: this.config.dataset_id }), {
             handleAs: "json"
         });
     }
